@@ -10,6 +10,7 @@
             height: 100vh;
             width: 100vw;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
@@ -38,13 +39,15 @@
   </head>
   <body>
     <div class="buttonContainer" onclick="handleWelcome()">
+        <h1 style="display: block;">Welcome to the WatchTower's Malware Detection System</h1>
+        
         <button type="button" class="btn btn-primary">Proceed</button>
     </div>
 
     <div class="dashBoard">
         <button type="button" class="btn btn-primary" onclick="handleMalwareScan()">Malware Scan</button>
         <button type="button" class="btn btn-primary" onclick="handleClearJunkFiles()">Clear Junk Files</button>
-        <button type="button" class="btn btn-primary">Get Started</button>
+        <!-- <button type="button" class="btn btn-primary">Get Started</button> -->
         <div class="information" id="one">
             CPU - 
             RAM - 
@@ -70,32 +73,42 @@
         let dashBoardSocket;
 
         function handleWelcome() {
-            document.querySelector(".buttonContainer").style.display = "none";
-            document.querySelector(".dashBoard").style.display = "block";
+  document.querySelector(".buttonContainer").style.display = "none";
+  document.querySelector(".dashBoard").style.display = "block";
 
-            let url = `ws://${window.location.host}/ws/socket-server/`;
-            dashBoardSocket = new WebSocket(url);
+  let url = `ws://${window.location.host}/ws/socket-server/`;
+  dashBoardSocket = new WebSocket(url);
 
-            dashBoardSocket.onmessage = function(e) {
-                let data = JSON.parse(e.data);
+  dashBoardSocket.onmessage = function (e) {
+    const payload = JSON.parse(e.data);
+    console.log(payload);
 
-                if (data.cpu !== undefined && data.ram !== undefined && data.storage !== undefined) {
-                    const infoDiv = document.getElementById("one");
-                    infoDiv.innerHTML = `
-                        CPU: ${data.cpu}% &nbsp;
-                        RAM: ${data.ram}% &nbsp;
-                        Storage: ${data.storage}%
-                    `;
-                } else if (data.type === "scan_progress") {
+    console.log(payload)
+    if (
+      payload.type === "malware" &&
+      payload.subType === "system usage" &&
+      payload.data
+    ) {
+      const { cpu, ram, storage } = payload.data;
+      const infoDiv = document.getElementById("one");
+      infoDiv.innerHTML = `
+        CPU: ${cpu}% &nbsp;
+        RAM: ${ram}% &nbsp;
+        Storage: ${storage}%
+      `;
+    }else if (payload.type === "scan_progress") {
                     
-                    displayScannedFoldersList(data.current_file);
-                } else if (data.type === "scan_result") {
+                    displayScannedFoldersList(payload.current_file);
+                } else if (payload.type === "scan_result") {
                     displayScannedFoldersList("Scan Complete");
-                }else if (data.type === "junk_progress") {
-                    displayScannedFoldersList(data.message);
+                }else if (payload.type === "junk_progress") {
+                    displayScannedFoldersList(payload.message);
                 }
-            };
-        }
+
+    
+  };
+}
+
 
         function handleMalwareScan(){
             document.getElementById("two").style.display = "block";
